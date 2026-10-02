@@ -22,8 +22,9 @@
 }
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body);margin:0}
-.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 96px}
 h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.05}
 .mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
@@ -160,6 +161,46 @@ table.sg{border-collapse:separate;border-spacing:3px;font-family:var(--mono);fon
 .kpis small{color:var(--muted)}
 .ratebar{display:inline-block;height:8px;border-radius:2px;vertical-align:middle}
 @media (prefers-reduced-motion:no-preference){.bar3 div,.dist .b{transition:flex-basis .4s ease,width .4s ease}}
+
+/* markets + odds */
+.mk{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px 22px}
+.mkg h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.mkr{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.mkr:last-child{border-bottom:0}
+.mkr .p{font-family:var(--mono);text-align:right;min-width:48px}
+.mkr .o{font-family:var(--mono);color:var(--muted);text-align:right;min-width:44px;font-size:13px}
+.add{border:1px solid var(--line);background:var(--sunk);border-radius:6px;padding:3px 9px;cursor:pointer;font-size:12px;font-weight:600;min-width:52px}
+.add:hover{border-color:var(--fg)}
+.add[aria-pressed="true"]{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.add[disabled]{opacity:.35;cursor:default}
+.ev-pos{color:var(--good);font-weight:600} .ev-neg{color:var(--muted)}
+tr.value td{background:var(--good-soft)}
+
+/* parlay slip */
+.slipbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;border:0;border-radius:999px;padding:12px 18px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.slipbtn b{font-family:var(--mono);font-weight:500;margin-left:6px}
+.slip{position:fixed;right:0;top:0;bottom:0;width:min(400px,100%);z-index:30;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;padding:calc(16px + env(safe-area-inset-top,0px)) 18px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:-10px 0 40px rgba(0,0,0,.5)}
+.slip header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.slip h3{font-size:26px;text-transform:uppercase}
+.x{border:1px solid var(--line);background:none;border-radius:6px;padding:4px 10px;cursor:pointer}
+.legs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.leggrp{background:var(--sunk);border-radius:8px;padding:10px 12px}
+.leggrp .gm{font-size:12px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between}
+.leg{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px;padding:3px 0}
+.leg button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1}
+.slipsum{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.slipsum .big{font-family:var(--mono);font-size:30px}
+.slipsum input{width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 10px;color:var(--fg);font:15px var(--mono)}
+.note{font-size:12.5px;color:var(--muted)}
+
+/* receipts / projections */
+.hit{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.hit.y{background:var(--good-soft);color:var(--good)} .hit.n{background:var(--bad-soft);color:var(--bad)}
+.probs{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+.probs b{color:var(--fg);font-weight:600}
+td.zone{font-family:var(--mono);text-align:right}
+.round{margin-top:22px}
+.round h4{font-family:var(--display);font-size:20px;text-transform:uppercase;margin:0 0 8px}
 </style>
 
 <div class="wrap">
@@ -170,6 +211,9 @@ table.sg{border-collapse:separate;border-spacing:3px;font-family:var(--mono);fon
     </div>
     <div class="views" role="group" aria-label="View">
       <button id="v-matches" aria-pressed="true" data-v="matches">Predictions</button>
+      <button id="v-receipts" aria-pressed="false" data-v="receipts">Receipts</button>
+      <button id="v-proj" aria-pressed="false" data-v="proj">Projections</button>
+      <button id="v-value" aria-pressed="false" data-v="value">Value bets</button>
       <button id="v-ratings" aria-pressed="false" data-v="ratings">Team ratings</button>
       <button id="v-table" aria-pressed="false" data-v="table">League table</button>
       <button id="v-record" aria-pressed="false" data-v="record">Track record</button>
@@ -181,12 +225,17 @@ table.sg{border-collapse:separate;border-spacing:3px;font-family:var(--mono);fon
     <nav class="rail" id="rail" aria-label="Fixtures"></nav>
     <main class="main" id="main"></main>
   </div>
+  <div id="view-receipts" hidden></div>
+  <div id="view-proj" hidden></div>
+  <div id="view-value" hidden></div>
   <div id="view-ratings" hidden></div>
   <div id="view-table" hidden></div>
   <div id="view-record" hidden></div>
 
   <footer class="foot" id="foot"></footer>
 </div>
+<button class="slipbtn" id="slipbtn" hidden>Parlay<b id="slipcount"></b></button>
+<aside class="slip" id="slip" hidden aria-label="Parlay builder"></aside>
 
 <script>
 const D = /*DATA*/null;
@@ -346,6 +395,9 @@ function renderMatch(m) {
     <div style="margin-top:14px;font-size:14px"><span class="label">Most likely scores</span><div class="mono" style="margin-top:4px">${top}</div></div>
   </div>
 
+  ${renderOdds(m)}
+  ${renderMarkets(m)}
+
   <section>
     <h3>Why it leans this way</h3>
     <p class="sub">What's driving the number, and what to keep an eye on.</p>
@@ -354,16 +406,16 @@ function renderMatch(m) {
 
   <section>
     <h3>How it was calculated</h3>
-    <p class="sub">Every number on this page comes from these five steps. Nothing is hand-picked.</p>
+    <p class="sub">Every number on this page comes from these five steps. Nothing is hand-picked. The markets above are all read off the scoreline grid in step 5.</p>
     <div class="panel steps">
       <div class="step"><div class="n">1</div><div>
         <h4>Start from an average team</h4>
-        <p>Across the ${L.trained_on} league games from ${L.seasons_used.join(" and ")}, a team scores about <b class="mono">${f2(c.base_goals)}</b> goals a game. Recent games count more: a game from ${D.settings.half_life_days} days ago counts half as much as one from today. Home teams score about <b class="mono">${L.home_adv_mult.toFixed(2)}×</b> as many goals as away teams.</p>
+        <p>Across the ${L.trained_on} ${esc(L.name)} games from ${L.seasons_used.join(" and ")}, an average team on a neutral ground scores about <b class="mono">${f2(c.base_goals)}</b> goals a game. Recent games count more: a game from ${D.settings.half_life_days} days ago counts half as much as one from today. Home teams score about <b class="mono">${L.home_adv_mult.toFixed(2)}×</b> as many goals as away teams.${L.joint ? " The Premier League and Championship are rated together, so promoted and relegated teams keep their history." : ""}</p>
       </div></div>
 
       <div class="step"><div class="n">2</div><div>
         <h4>Rate each team's attack and defense</h4>
-        <p>The model finds the ratings that best explain every score in the data. Attack above 0 means they score more than average. Defense above 0 means they concede less than average. As multipliers: e<sup>rating</sup>.</p>
+        <p>The model finds the ratings that best explain every score in the data. Attack above 0 means they score more than average. Defense above 0 means they concede less than average. As multipliers: e<sup>rating</sup>. Teams new to the league with no history start a little below average and move as results come in.</p>
         <div class="scroll"><table class="rt"><thead><tr><th>Team</th><th class="num">Attack</th><th class="num">×goals</th><th class="num">Defense</th><th class="num">×conceded</th></tr></thead><tbody>
           <tr><td style="color:var(--home);font-weight:600">${esc(H)}</td><td class="num mono">${sgnc(c.home_att)}</td><td class="num mono">${Math.exp(c.home_att).toFixed(2)}</td><td class="num mono">${sgnc(c.home_def)}</td><td class="num mono">${Math.exp(-c.home_def).toFixed(2)}</td></tr>
           <tr><td style="color:var(--away);font-weight:600">${esc(A)}</td><td class="num mono">${sgnc(c.away_att)}</td><td class="num mono">${Math.exp(c.away_att).toFixed(2)}</td><td class="num mono">${sgnc(c.away_def)}</td><td class="num mono">${Math.exp(-c.away_def).toFixed(2)}</td></tr>
@@ -387,7 +439,7 @@ function renderMatch(m) {
 
       <div class="step"><div class="n">5</div><div>
         <h4>Multiply into every possible scoreline, then add them up</h4>
-        <p>Each cell is P(${esc(short(H))} goals) × P(${esc(short(A))} goals), in %. Cells below the dashed diagonal add up to the home win, the diagonal itself to the draw, and cells above it to the away win.</p>
+        <p>Each cell is P(${esc(short(H))} goals) × P(${esc(short(A))} goals), in %. One tweak: plain Poisson gets the low scores slightly wrong, so 0–0, 1–0, 0–1 and 1–1 are nudged by a correction fitted from this league's results (Dixon-Coles, ρ = ${c.rho.toFixed(3)}). Cells below the dashed diagonal add up to the home win, the diagonal itself to the draw, and cells above it to the away win.</p>
         <div class="gridwrap">${grid}</div>
         <div class="legend"><span><i style="background:var(--home-fill)"></i>${esc(short(H))} win ${pct(p.home_win,1)}</span><span><i style="background:var(--surface);outline:1.5px dashed var(--muted);outline-offset:-2px"></i>Draw ${pct(p.draw,1)}</span><span><i style="background:var(--away-fill)"></i>${esc(short(A))} win ${pct(p.away_win,1)}</span></div>
       </div></div>
@@ -409,6 +461,218 @@ function renderMatch(m) {
 }
 
 
+
+/* ---------- markets: everything read off the scoreline grid ---------- */
+const ALL_MATCHES = () => D.leagues.flatMap(l => l.matches.map(m => Object.assign(m, {_lg: l.name})));
+const findMatch = id => ALL_MATCHES().find(m => m.id === id);
+const MK = {
+  "H":   {g:"Result", l:m=>`${short(m.home)} win`, f:(i,j)=>i>j},
+  "D":   {g:"Result", l:()=>"Draw", f:(i,j)=>i===j},
+  "A":   {g:"Result", l:m=>`${short(m.away)} win`, f:(i,j)=>i<j},
+  "1X":  {g:"Double chance", l:m=>`${short(m.home)} or draw`, f:(i,j)=>i>=j},
+  "X2":  {g:"Double chance", l:m=>`${short(m.away)} or draw`, f:(i,j)=>i<=j},
+  "12":  {g:"Double chance", l:()=>"Either team wins", f:(i,j)=>i!==j},
+  "O0.5":{g:"Total goals", l:()=>"Over 0.5 goals", f:(i,j)=>i+j>0},
+  "O1.5":{g:"Total goals", l:()=>"Over 1.5 goals", f:(i,j)=>i+j>1},
+  "O2.5":{g:"Total goals", l:()=>"Over 2.5 goals", f:(i,j)=>i+j>2},
+  "U2.5":{g:"Total goals", l:()=>"Under 2.5 goals", f:(i,j)=>i+j<3},
+  "O3.5":{g:"Total goals", l:()=>"Over 3.5 goals", f:(i,j)=>i+j>3},
+  "U3.5":{g:"Total goals", l:()=>"Under 3.5 goals", f:(i,j)=>i+j<4},
+  "O4.5":{g:"Total goals", l:()=>"Over 4.5 goals", f:(i,j)=>i+j>4},
+  "BY":  {g:"Both teams score", l:()=>"Both teams score: yes", f:(i,j)=>i>0&&j>0},
+  "BN":  {g:"Both teams score", l:()=>"Both teams score: no", f:(i,j)=>!(i>0&&j>0)},
+  "HO0.5":{g:"Team goals", l:m=>`${short(m.home)} score 1+`, f:(i,j)=>i>=1},
+  "HO1.5":{g:"Team goals", l:m=>`${short(m.home)} score 2+`, f:(i,j)=>i>=2},
+  "HO2.5":{g:"Team goals", l:m=>`${short(m.home)} score 3+`, f:(i,j)=>i>=3},
+  "AO0.5":{g:"Team goals", l:m=>`${short(m.away)} score 1+`, f:(i,j)=>j>=1},
+  "AO1.5":{g:"Team goals", l:m=>`${short(m.away)} score 2+`, f:(i,j)=>j>=2},
+  "AO2.5":{g:"Team goals", l:m=>`${short(m.away)} score 3+`, f:(i,j)=>j>=3},
+  "HCS": {g:"Clean sheet / to nil", l:m=>`${short(m.home)} clean sheet`, f:(i,j)=>j===0},
+  "ACS": {g:"Clean sheet / to nil", l:m=>`${short(m.away)} clean sheet`, f:(i,j)=>i===0},
+  "HWN": {g:"Clean sheet / to nil", l:m=>`${short(m.home)} win to nil`, f:(i,j)=>i>j&&j===0},
+  "AWN": {g:"Clean sheet / to nil", l:m=>`${short(m.away)} win to nil`, f:(i,j)=>j>i&&i===0},
+  "H-1.5":{g:"Handicap", l:m=>`${short(m.home)} −1.5 (win by 2+)`, f:(i,j)=>i-j>=2},
+  "A+1.5":{g:"Handicap", l:m=>`${short(m.away)} +1.5 (lose by 1 at most)`, f:(i,j)=>i-j<=1},
+  "A-1.5":{g:"Handicap", l:m=>`${short(m.away)} −1.5 (win by 2+)`, f:(i,j)=>j-i>=2},
+  "H+1.5":{g:"Handicap", l:m=>`${short(m.home)} +1.5 (lose by 1 at most)`, f:(i,j)=>j-i<=1},
+};
+function mkDef(key) {
+  if (key.startsWith("CS:")) { const [, a, b] = key.split(":").map(Number); return {g:"Correct score", l:m=>`${short(m.home)} ${a}–${b} ${short(m.away)}`, f:(i,j)=>i===a&&j===b}; }
+  return MK[key];
+}
+function probOf(m, preds) {
+  let tot = 0, hit = 0;
+  (m.mgrid || m.grid).forEach((row, i) => row.forEach((v, j) => { tot += v; if (preds.every(f => f(i, j))) hit += v; }));
+  return hit / tot;
+}
+const american = p => p <= 0 || p >= 1 ? "–" : p >= 0.5 ? `−${Math.round(100 * p / (1 - p))}` : `+${Math.round(100 * (1 - p) / p)}`;
+const decimal = p => p > 0 ? (1 / p).toFixed(2) : "–";
+const addBtn = (mid, key) => {
+  const on = slipHas(mid, key);
+  return `<button class="add" data-mid="${mid}" data-key="${key}" aria-pressed="${on}" title="Add to parlay">${on ? "Added" : "+ Add"}</button>`;
+};
+
+function renderMarkets(m) {
+  const ORDER = ["Result", "Double chance", "Total goals", "Both teams score", "Team goals", "Clean sheet / to nil", "Handicap", "Correct score"];
+  const groups = Object.fromEntries(ORDER.map(g => [g, []]));
+  const keys = Object.keys(MK).concat(m.top_scores.slice(0, 5).map(s => `CS:${s.h}:${s.a}`));
+  for (const k of keys) { const d = mkDef(k); (groups[d.g] = groups[d.g] || []).push(k); }
+  const p = m.pred, dnbH = p.home_win / (p.home_win + p.away_win);
+  const html = Object.entries(groups).map(([g, ks]) => `<div class="mkg"><h4>${g}</h4>${ks.map(k => {
+      const d = mkDef(k), pr = probOf(m, [d.f]);
+      return `<div class="mkr"><span>${esc(d.l(m))}</span><span class="p">${pct(pr, 1)}</span><span class="o" title="fair decimal odds">${decimal(pr)}</span>${addBtn(m.id, k)}</div>`;
+    }).join("")}${g === "Result" ? `<div class="mkr"><span>${esc(short(m.home))} draw no bet</span><span class="p">${pct(dnbH,1)}</span><span class="o">${decimal(dnbH)}</span><span class="note" style="min-width:52px;text-align:center">refund</span></div><div class="mkr"><span>${esc(short(m.away))} draw no bet</span><span class="p">${pct(1-dnbH,1)}</span><span class="o">${decimal(1-dnbH)}</span><span class="note" style="min-width:52px;text-align:center">refund</span></div>` : ""}</div>`).join("");
+  return `<section><h3>Markets</h3>
+    <p class="sub">Model probability and fair decimal odds for each bet. If a bookie offers higher odds than the fair price, the model thinks it's good value. Tap + Add to build a parlay.</p>
+    <div class="panel mk">${html}</div></section>`;
+}
+
+function renderOdds(m) {
+  if (!m.odds) return "";
+  const name = {H: `${short(m.home)} win`, D: "Draw", A: `${short(m.away)} win`, "O2.5": "Over 2.5", "U2.5": "Under 2.5"};
+  return `<section><h3>Model vs bookies</h3>
+    <p class="sub">Average bookmaker prices, with their margin (${pct(m.odds.margin,1)}) stripped out so the percentages compare fairly. EV is the expected return per $1 at that price if the model is right.</p>
+    <div class="panel scroll"><table class="rt"><thead><tr><th>Bet</th><th class="num">Model</th><th class="num">Bookies</th><th class="num">Edge</th><th class="num">Avg odds</th><th class="num">EV</th><th></th></tr></thead><tbody>
+    ${m.odds.lines.map(x => `<tr class="${x.ev >= 0.05 ? "value" : ""}"><td>${esc(name[x.key])}</td><td class="num mono">${pct(x.model,1)}</td><td class="num mono">${pct(x.market,1)}</td>
+      <td class="num mono ${x.model - x.market > 0.03 ? "good" : x.model - x.market < -0.03 ? "bad" : ""}">${x.model - x.market >= 0 ? "+" : "−"}${(Math.abs(x.model - x.market) * 100).toFixed(1)}</td>
+      <td class="num mono">${x.odds.toFixed(2)}</td><td class="num mono ${x.ev >= 0.05 ? "ev-pos" : "ev-neg"}">${x.ev >= 0 ? "+" : "−"}${(Math.abs(x.ev) * 100).toFixed(0)}%</td><td>${addBtn(m.id, x.key)}</td></tr>`).join("")}
+    </tbody></table></div></section>`;
+}
+
+/* ---------- parlay slip ---------- */
+let SLIP = [];
+try { SLIP = JSON.parse(localStorage.getItem("bk-slip") || "[]"); } catch (e) {}
+SLIP = SLIP.filter(l => findMatch(l.mid) && mkDef(l.key));
+let slipOpen = false;
+const slipHas = (mid, key) => SLIP.some(l => l.mid === mid && l.key === key);
+function saveSlip() { try { localStorage.setItem("bk-slip", JSON.stringify(SLIP)); } catch (e) {} }
+function toggleLeg(mid, key) {
+  if (slipHas(mid, key)) SLIP = SLIP.filter(l => !(l.mid === mid && l.key === key));
+  else SLIP.push({mid, key});
+  saveSlip(); refreshSlip();
+}
+function parlayProb() {
+  const by = {};
+  SLIP.forEach(l => (by[l.mid] = by[l.mid] || []).push(l));
+  let p = 1;
+  const groups = Object.entries(by).map(([mid, legs]) => {
+    const m = findMatch(mid);
+    const gp = probOf(m, legs.map(l => mkDef(l.key).f));
+    p *= gp;
+    return {m, legs, p: gp};
+  });
+  return {p, groups};
+}
+function parseOdds(s) {
+  s = String(s || "").trim(); if (!s) return null;
+  const v = parseFloat(s.replace(/[^\d.+-]/g, ""));
+  if (!isFinite(v)) return null;
+  if (/^[+-]/.test(s) && Math.abs(v) >= 100) return v > 0 ? 1 + v / 100 : 1 + 100 / Math.abs(v);
+  return v > 1 ? v : null;
+}
+function refreshSlip() {
+  document.querySelectorAll(".add").forEach(b => { const on = slipHas(b.dataset.mid, b.dataset.key); b.setAttribute("aria-pressed", on); b.textContent = on ? "Added" : "+ Add"; });
+  const btn = $("#slipbtn");
+  btn.hidden = SLIP.length === 0 && !slipOpen;
+  const {p, groups} = parlayProb();
+  $("#slipcount").textContent = SLIP.length ? `${SLIP.length} · ${pct(p, 1)}` : "";
+  const box = $("#slip");
+  box.hidden = !slipOpen;
+  if (!slipOpen) return;
+  const prev = ($("#myodds") || {}).value || "";
+  box.innerHTML = `<header><h3>Parlay</h3><button class="x" id="slipclose">Close</button></header>
+    <div class="legs">${groups.length ? groups.map(g => `<div class="leggrp"><div class="gm"><span>${esc(short(g.m.home))} v ${esc(short(g.m.away))}</span><span class="mono">${pct(g.p,1)}</span></div>
+      ${g.legs.map(l => `<div class="leg"><span>${esc(mkDef(l.key).l(g.m))}</span><button data-mid="${l.mid}" data-key="${l.key}" aria-label="Remove">×</button></div>`).join("")}</div>`).join("")
+      : `<p class="note">No legs yet. Tap + Add on any market.</p>`}</div>
+    <div class="slipsum">
+      <div><span class="label">Chance it all hits</span><div class="big ${p < 0.1 ? "bad" : p >= 0.5 ? "good" : ""}">${SLIP.length ? pct(p, 1) : "–"}</div></div>
+      <div class="note">Fair odds: <b class="mono" style="color:var(--fg)">${SLIP.length ? decimal(p) : "–"}</b> decimal · <b class="mono" style="color:var(--fg)">${SLIP.length ? american(p) : "–"}</b> american</div>
+      <label class="label" for="myodds">Your sportsbook's odds (e.g. 7.50 or +650)</label>
+      <input id="myodds" inputmode="decimal" autocomplete="off" value="${esc(prev)}">
+      <div id="evline" class="note"></div>
+      <div class="note">Legs from the same game are worked out together from that game's scoreline grid, so related picks (like a win plus over 2.5) aren't double counted. Different games are treated as independent.</div>
+      <button class="x" id="slipclear">Clear all</button>
+    </div>`;
+  const evUpdate = () => {
+    const o = parseOdds($("#myodds").value), el = $("#evline");
+    if (!o || !SLIP.length) { el.innerHTML = ""; return; }
+    const ev = p * o - 1;
+    el.innerHTML = `At ${o.toFixed(2)}, expected return is <b class="${ev > 0 ? "good" : "bad"}">${ev >= 0 ? "+" : "−"}${(Math.abs(ev) * 100).toFixed(0)}%</b> per $1. ${ev > 0 ? "The price beats the model's fair odds." : "The book's price is shorter than the model's fair odds."}`;
+  };
+  $("#myodds").oninput = evUpdate; evUpdate();
+  $("#slipclose").onclick = () => { slipOpen = false; refreshSlip(); };
+  $("#slipclear").onclick = () => { SLIP = []; saveSlip(); refreshSlip(); };
+  box.querySelectorAll(".leg button").forEach(b => b.onclick = () => toggleLeg(b.dataset.mid, b.dataset.key));
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".add");
+  if (b && !b.disabled) toggleLeg(b.dataset.mid, b.dataset.key);
+});
+$("#slipbtn").onclick = () => { slipOpen = !slipOpen; refreshSlip(); };
+
+/* ---------- receipts ---------- */
+function renderReceipts() {
+  const R = L.receipts, s = R.season;
+  if (!s) { $("#view-receipts").innerHTML = `<p class="sub">No games played yet this season.</p>`; return; }
+  const resName = (g, k) => k === "H" ? short(g.home) : k === "A" ? short(g.away) : "Draw";
+  $("#view-receipts").innerHTML = `<section><h3>Receipts</h3>
+    <p class="sub">How the model's picks actually did this season. Replayed honestly: for each round, the model only used results from before that round kicked off.</p>
+    <div class="kpis">
+      <div><span class="label">Games</span><b>${s.games}</b><small>${esc(L.name)} so far</small></div>
+      <div><span class="label">Result picked right</span><b class="${s.accuracy >= 0.5 ? "good" : s.accuracy < 0.42 ? "bad" : ""}">${pct(s.accuracy,1)}</b><small>a coin flip between 3 outcomes is 33%</small></div>
+      <div><span class="label">Over / under 2.5 right</span><b class="${s.over_accuracy >= 0.55 ? "good" : s.over_accuracy < 0.48 ? "bad" : ""}">${pct(s.over_accuracy,1)}</b><small>picks whichever side is over 50%</small></div>
+      <div><span class="label">BTTS right</span><b class="${s.btts_accuracy >= 0.55 ? "good" : s.btts_accuracy < 0.48 ? "bad" : ""}">${pct(s.btts_accuracy,1)}</b><small>same idea</small></div>
+      <div><span class="label">Log loss (lower is better)</span><b class="${s.logloss_model < s.logloss_baseline ? "good" : "bad"}">${s.logloss_model.toFixed(3)}</b><small>baseline ${s.logloss_baseline.toFixed(3)}</small></div>
+    </div>
+    ${R.rounds.map(r => {
+      const hits = r.games.filter(g => g.hit).length;
+      return `<div class="round"><h4>${esc(r.round)} · ${hits}/${r.games.length} results right</h4><div class="panel scroll"><table class="rt"><thead><tr><th>Match</th><th>Model said</th><th class="num">Score</th><th>Result</th><th>O/U 2.5</th></tr></thead><tbody>
+      ${r.games.map(g => `<tr><td style="white-space:nowrap">${swatch(g.home)}${esc(short(g.home))} v ${esc(short(g.away))}</td>
+        <td class="probs"><b>${esc(resName(g, g.pick))}</b> · ${pct(g.ph)} / ${pct(g.pd)} / ${pct(g.pa)}</td>
+        <td class="num mono">${g.hg}–${g.ag}</td>
+        <td><span class="hit ${g.hit ? "y" : "n"}">${g.hit ? "Hit" : "Miss"}</span></td>
+        <td><span class="probs">${g.over >= 0.5 ? "Over" : "Under"} ${pct(Math.max(g.over, 1 - g.over))}</span> <span class="hit ${g.over_hit ? "y" : "n"}">${g.over_hit ? "Hit" : "Miss"}</span></td></tr>`).join("")}
+      </tbody></table></div></div>`;
+    }).join("")}
+  </section>`;
+}
+
+/* ---------- projections ---------- */
+function renderProj() {
+  const P = L.projections;
+  const cell = (v, bad) => `<td class="zone" style="background:color-mix(in srgb, var(${bad ? "--bad" : "--good"}) ${Math.round(Math.min(1, v) * 55)}%, transparent)">${v >= 0.995 ? ">99%" : v > 0 && v < 0.005 ? "<1%" : pct(v)}</td>`;
+  $("#view-proj").innerHTML = `<section><h3>Season projections</h3>
+    <p class="sub">${P.sims.toLocaleString()} simulations of the ${P.remaining} remaining ${esc(L.name)} games, using today's ratings. Each sim plays every game out with the same goal model, then we count how often each team finishes where.</p>
+    <div class="panel scroll"><table class="rt"><thead><tr><th>Team</th><th class="num">P</th><th class="num">Pts now</th><th class="num">Proj. pts</th><th class="num">Avg finish</th>${P.zones.map(z => `<th class="num">${esc(z.label)}</th>`).join("")}</tr></thead><tbody>
+    ${P.teams.map(t => `<tr><td style="font-weight:600;white-space:nowrap">${swatch(t.team)}${esc(t.team)}</td><td class="num mono">${t.played}</td><td class="num mono">${t.pts_now}</td><td class="num mono">${t.pts_proj}</td><td class="num mono">${t.pos_avg}</td>${P.zones.map(z => cell(t.zones[z.key], z.key === "down")).join("")}</tr>`).join("")}
+    </tbody></table></div></section>`;
+}
+
+/* ---------- value bets (all leagues) ---------- */
+function renderValue() {
+  const name = (m, k) => ({H: `${short(m.home)} win`, D: "Draw", A: `${short(m.away)} win`, "O2.5": "Over 2.5", "U2.5": "Under 2.5"})[k];
+  const rows = [];
+  D.leagues.forEach(l => l.matches.forEach(m => (m.odds ? m.odds.lines : []).forEach(x => { if (x.ev >= 0.05 && x.model >= 0.15) rows.push({l, m, x}); })));
+  rows.sort((a, b) => b.x.ev - a.x.ev);
+  const anyOdds = D.leagues.some(l => l.matches.some(m => m.odds));
+  $("#view-value").innerHTML = `<section><h3>Value bets</h3>
+    <p class="sub">Bets where the model's chance times the average bookmaker price comes out at least 5% positive, across all 8 leagues. Treat these as "the model disagrees with the market," not as locks. Over a season, bookmakers usually win that argument.</p>
+    ${!anyOdds ? `<div class="panel"><p style="margin:0">Bookmaker odds weren't available on the last rebuild. They come from football-data.co.uk and load on the GitHub version of the site.</p></div>` :
+      !rows.length ? `<div class="panel"><p style="margin:0">No bets clear the bar right now. The model and the books mostly agree on this round.</p></div>` :
+      `<div class="panel scroll"><table class="rt"><thead><tr><th>Match</th><th>Bet</th><th class="num">Model</th><th class="num">Bookies</th><th class="num">Avg odds</th><th class="num">EV</th><th></th></tr></thead><tbody>
+      ${rows.map(({l, m, x}) => `<tr><td style="white-space:nowrap"><span class="note">${esc(l.name)}</span><br>${esc(short(m.home))} v ${esc(short(m.away))}</td><td>${esc(name(m, x.key))}</td><td class="num mono">${pct(x.model,1)}</td><td class="num mono">${pct(x.market,1)}</td><td class="num mono">${x.odds.toFixed(2)}</td><td class="num mono ev-pos">+${(x.ev*100).toFixed(0)}%</td><td>${addBtn(m.id, x.key)}</td></tr>`).join("")}
+      </tbody></table></div>`}
+  </section>`;
+}
+
+function zoneClass(pos) {
+  const n = L.table.length, conv = v => v > 0 ? v : n + v + 1;
+  const top = L.zones.find(z => z.key === "top"), down = L.zones.find(z => z.key === "down");
+  if (top && pos >= conv(top.from) && pos <= conv(top.to)) return "pos-top";
+  if (down && pos >= conv(down.from) && pos <= conv(down.to)) return "pos-bot";
+  return "";
+}
+
 /* ---------- other views ---------- */
 function renderRatings() {
   const maxA = Math.max(...L.ratings.map(r => Math.abs(r.attack))), maxD = Math.max(...L.ratings.map(r => Math.abs(r.defense)));
@@ -422,9 +686,9 @@ function renderRatings() {
   </tbody></table></div></section>`;
 }
 function renderTable() {
-  $("#view-table").innerHTML = `<section><h3>League table</h3><p class="sub">${L.seasons_used[1]}, from results in the dataset. Green edge marks the top 4, red the bottom 3.</p>
+  $("#view-table").innerHTML = `<section><h3>League table</h3><p class="sub">${L.seasons_used[1]}, from results in the dataset. Green edge marks the ${esc((L.zones.find(z=>z.key==="top")||{}).label||"top")}, red the ${esc(((L.zones.find(z=>z.key==="down")||{}).label||"bottom").toLowerCase())}.</p>
   <div class="panel scroll"><table class="rt"><thead><tr><th>#</th><th>Team</th><th class="num">P</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">GF</th><th class="num">GA</th><th class="num">GD</th><th class="num">Pts</th></tr></thead><tbody>
-  ${L.table.map(r=>`<tr class="${r.pos<=4?"pos-top":r.pos>L.table.length-3?"pos-bot":""}"><td class="mono" style="color:var(--muted)">${r.pos}</td><td style="font-weight:600;white-space:nowrap">${swatch(r.team)}${esc(r.team)}</td>${["p","w","d","l","gf","ga"].map(k=>`<td class="num mono">${r[k]}</td>`).join("")}<td class="num mono ${r.gd>0?"good":r.gd<0?"bad":""}">${r.gd>0?"+":""}${r.gd}</td><td class="num mono" style="font-weight:600">${r.pts}</td></tr>`).join("")}
+  ${L.table.map(r=>`<tr class="${zoneClass(r.pos)}"><td class="mono" style="color:var(--muted)">${r.pos}</td><td style="font-weight:600;white-space:nowrap">${swatch(r.team)}${esc(r.team)}</td>${["p","w","d","l","gf","ga"].map(k=>`<td class="num mono">${r[k]}</td>`).join("")}<td class="num mono ${r.gd>0?"good":r.gd<0?"bad":""}">${r.gd>0?"+":""}${r.gd}</td><td class="num mono" style="font-weight:600">${r.pts}</td></tr>`).join("")}
   </tbody></table></div></section>`;
 }
 function renderRecord() {
@@ -437,6 +701,7 @@ function renderRecord() {
     <div><span class="label">Games tested</span><b>${b.games}</b><small>${b.season} season</small></div>
     <div><span class="label">Picked the right result</span><b class="${b.accuracy>=0.5?"good":b.accuracy<0.45?"bad":""}">${pct(b.accuracy,1)}</b><small>baseline (always home) ≈ 45%</small></div>
     <div><span class="label">Log loss (lower is better)</span><b class="${llGain>0?"good":"bad"}">${b.logloss_model.toFixed(3)}</b><small>baseline ${b.logloss_baseline.toFixed(3)} · <span class="pill ${llGain>0?"good":"bad"}">${pct(Math.abs(llGain),1)} ${llGain>0?"better":"worse"}</span></small></div>
+    <div><span class="label">Over / under 2.5 right</span><b class="${b.over_accuracy>=0.55?"good":b.over_accuracy<0.48?"bad":""}">${pct(b.over_accuracy,1)}</b><small>BTTS right ${pct(b.btts_accuracy,1)}</small></div>
     <div><span class="label">Brier score (lower is better)</span><b class="${b.brier_model<b.brier_baseline?"good":"bad"}">${b.brier_model.toFixed(3)}</b><small>baseline ${b.brier_baseline.toFixed(3)}</small></div>
   </div>
   <div class="panel"><p style="margin:0;max-width:70ch">What this means: the probabilities are clearly better than guessing, but this is a simple goals-only model. Bookmaker closing odds usually land around 0.95 to 1.00 log loss in top leagues, so the books are still sharper. Compare these numbers to real odds before trusting any edge.</p></div>
@@ -451,7 +716,7 @@ function renderLeagues() {
 function setLeague(code, matchId) {
   L = D.leagues.find(l => l.code === code) || D.leagues[0];
   renderLeagues(); setLabel();
-  renderRatings(); renderTable(); renderRecord();
+  renderRatings(); renderTable(); renderRecord(); renderReceipts(); renderProj();
   if (L.matches.length) select(matchId);
   else { $("#rail").innerHTML = ""; $("#main").innerHTML = `<p class="sub">No upcoming games in the data for ${esc(L.name)} right now.</p>`; }
   try { localStorage.setItem("mm-league", L.code); } catch (e) {}
@@ -465,7 +730,7 @@ function select(id, scroll) {
   if (scroll && window.innerWidth <= 860) $("#main").scrollIntoView({behavior:"smooth"});
 }
 function show(v) {
-  for (const k of ["matches","ratings","table","record"]) {
+  for (const k of ["matches","receipts","proj","value","ratings","table","record"]) {
     $("#view-" + k).hidden = k !== v;
     $("#v-" + k).setAttribute("aria-pressed", k === v);
   }
@@ -477,6 +742,8 @@ const hash = (location.hash || "").slice(1);
 let startCode = (D.leagues.find(l => l.matches.some(m => m.id === hash)) || {}).code;
 if (!startCode) { try { startCode = localStorage.getItem("mm-league"); } catch (e) {} }
 setLeague(startCode || D.leagues[0].code, hash);
+renderValue(); refreshSlip();
 let saved = "matches"; try { saved = localStorage.getItem("mm-view") || "matches"; } catch (e) {}
+if (!document.getElementById("view-" + saved)) saved = "matches";
 show(saved);
 </script>
