@@ -1,0 +1,482 @@
+<title>Ball Knowledge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* layout: fixture rail on the left, one match dossier on the right, read top to bottom like a pre-match brief */
+:root{
+  /* single dark look on purpose: club kit colours (incl. white and yellow kits) read best on a dark ground */
+  --bg:#111214; --surface:#1a1b1e; --sunk:#232428; --line:#33353a;
+  --fg:#f4f4f1; --muted:#a2a4a9; --faint:#6e7076;
+  --home:#f4f4f1; --home-fill:#f4f4f1; --on-home:#111214;
+  --away:#a2a4a9; --away-fill:#a2a4a9; --on-away:#111214;
+  --draw:#6e7076; --draw-soft:#3a3c41;
+  --accent:#f4f4f1;
+  --good:#3ecf6e; --good-soft:#163222;
+  --bad:#ff5c5c; --bad-soft:#3d1a1b;
+  --warn:#ff9f43; --warn-soft:#3a2914;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.05}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+.kit{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;vertical-align:-1px;box-shadow:0 0 0 1px var(--line)}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* masthead */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:2px solid var(--fg);margin-bottom:20px}
+.mast h1{font-size:clamp(34px,6vw,52px);text-transform:uppercase}
+.mast .meta{color:var(--muted);font-size:13px;text-align:right}
+.leagues{display:flex;gap:6px;overflow-x:auto;margin:-6px 0 20px;padding-bottom:4px}
+.leagues button{flex:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;text-align:left;line-height:1.2}
+.leagues button small{display:block;font-size:11px;color:var(--muted)}
+.leagues button b{font-family:var(--display);font-size:17px;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+.leagues button[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.leagues button[aria-selected="true"] small{color:var(--bg);opacity:.75}
+.views{display:flex;gap:4px;flex-wrap:wrap}
+.views button{background:none;border:1px solid var(--line);padding:6px 12px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:500}
+.views button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* layout */
+.grid{display:grid;grid-template-columns:270px 1fr;gap:24px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:2px}
+@media (max-width:860px){.rail{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}}
+.day{font-family:var(--display);font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 10px 4px}
+@media (max-width:860px){.day{display:none}}
+.fx{all:unset;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px;border-radius:8px;border:1px solid transparent}
+@media (max-width:860px){.fx{min-width:210px;scroll-snap-align:start;background:var(--surface);border-color:var(--line)}}
+.fx:hover{background:var(--sunk)}
+.fx[aria-current="true"]{background:var(--surface);border-color:var(--fg)}
+.fx .t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx .p{font-family:var(--mono);font-size:13px;text-align:right}
+.fx .mini{grid-column:1/-1;height:4px;border-radius:2px;display:flex;overflow:hidden;margin-top:4px}
+.mini i{display:block;height:100%}
+
+/* match dossier */
+.main{min-width:0;display:flex;flex-direction:column;gap:28px}
+.head{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.when{color:var(--muted);font-size:13px}
+.teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:10px 0 18px}
+.teams>*{min-width:0}
+.teams h2{font-size:clamp(22px,4.4vw,40px);text-transform:uppercase;overflow-wrap:anywhere;hyphens:auto}
+.teams .h{color:var(--home)} .teams .a{color:var(--away);text-align:right}
+.teams .xg{font-family:var(--mono);font-size:clamp(20px,3vw,28px);text-align:center;white-space:nowrap}
+.teams .xg small{display:block;font-size:11px;color:var(--muted);font-family:var(--body);text-transform:uppercase;letter-spacing:.09em}
+.bar3{display:flex;height:38px;border-radius:6px;overflow:hidden;font-family:var(--mono);font-weight:500;font-size:14px}
+.bar3 div{display:flex;align-items:center;padding:0 10px;min-width:44px;white-space:nowrap;overflow:hidden}
+.bar3 .bh{background:var(--home-fill);color:var(--on-home)}
+.bar3 .bd{background:repeating-linear-gradient(135deg,var(--draw-soft) 0 6px,var(--surface) 6px 10px);color:var(--fg);justify-content:center}
+.bar3 .ba{background:var(--away-fill);color:var(--on-away);justify-content:flex-end}
+.bar3legend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:16px}
+.chip{background:var(--sunk);border-radius:8px;padding:10px 12px}
+.chip b{display:block;font-family:var(--mono);font-size:20px;font-weight:500}
+
+section h3{font-size:26px;text-transform:uppercase;margin-bottom:4px}
+section .sub{color:var(--muted);margin:0 0 14px;max-width:68ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+
+/* insights */
+.ins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ins li{display:grid;grid-template-columns:78px 1fr;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.ins li:last-child{border-bottom:0}
+.tag{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;padding:3px 7px;border-radius:4px;text-align:center}
+.tag.why{background:var(--fg);color:var(--bg)}
+.tag.trend{background:var(--sunk);color:var(--fg)}
+.tag.watch{background:var(--sunk);color:var(--fg)}
+.tag.h2h{background:var(--draw-soft);color:var(--fg)}
+.tag.caution{background:var(--warn-soft);color:var(--warn)}
+.tag.t-good{background:var(--good-soft);color:var(--good)}
+.tag.t-bad{background:var(--bad-soft);color:var(--bad)}
+.tag.t-warn{background:var(--warn-soft);color:var(--warn)}
+.ins li.t-good span:last-child b,.ins li.t-bad span:last-child b{font-weight:600}
+.pos-top td:first-child{box-shadow:inset 3px 0 0 var(--good)}
+.pos-bot td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+
+/* steps */
+.steps{display:flex;flex-direction:column;gap:0;counter-reset:s}
+.step{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:18px 0;border-bottom:1px dashed var(--line)}
+.step:last-child{border-bottom:0}
+.step .n{font-family:var(--display);font-size:30px;font-weight:700;color:var(--faint);line-height:1}
+.step h4{margin:0 0 4px;font-size:16px}
+.step p{margin:0 0 10px;color:var(--muted);max-width:68ch}
+.step>div{min-width:0}
+.eq{font-family:var(--mono);font-size:13.5px;background:var(--sunk);border-radius:8px;padding:12px 14px;overflow-x:auto;white-space:nowrap;line-height:1.9}
+.eq .h{color:var(--home);font-weight:500} .eq .a{color:var(--away);font-weight:500}
+.rt{width:100%;border-collapse:collapse;font-size:14px}
+.rt th{text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+.rt td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.rt td.num,.rt th.num{text-align:right}
+.scroll{overflow-x:auto}
+
+.dists{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:560px){.dists{grid-template-columns:1fr}}
+.dist .row{display:grid;grid-template-columns:26px 1fr 46px;gap:8px;align-items:center;font-size:13px;margin:3px 0}
+.dist .row .b{height:14px;border-radius:3px}
+.dist .row span:last-child{font-family:var(--mono);text-align:right}
+
+.gridwrap{overflow-x:auto}
+table.sg{border-collapse:separate;border-spacing:3px;font-family:var(--mono);font-size:12px;margin:0 auto}
+.sg th{color:var(--muted);font-weight:500;padding:2px 4px}
+.sg td{width:52px;height:38px;text-align:center;border-radius:4px;position:relative}
+.sg .ax{font-family:var(--body);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-top:10px;justify-content:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+
+/* h2h & form */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+.two>*{min-width:0}
+.h2hs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
+.h2hs div{background:var(--sunk);border-radius:8px;padding:10px}
+.h2hs b{display:block;font-family:var(--mono);font-size:22px;font-weight:500}
+.res{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:4px;font-size:11px;font-weight:700;color:var(--surface)}
+.res.W{background:var(--good)} .res.D{background:var(--muted)} .res.L{background:var(--bad)}
+.formrow{display:flex;gap:4px}
+.stat{display:grid;grid-template-columns:1fr auto auto;gap:6px 14px;font-size:14px}
+.stat .k{color:var(--muted)}
+.stat .v{font-family:var(--mono);text-align:right}
+.teamhead{font-family:var(--display);font-size:22px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+
+
+.foot{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;max-width:80ch}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpis div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.kpis b{display:block;font-family:var(--mono);font-size:26px;font-weight:500}
+.kpis small{color:var(--muted)}
+.ratebar{display:inline-block;height:8px;border-radius:2px;vertical-align:middle}
+@media (prefers-reduced-motion:no-preference){.bar3 div,.dist .b{transition:flex-basis .4s ease,width .4s ease}}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <div class="label" id="mdLabel">Premier League</div>
+      <h1>Ball Knowledge</h1>
+    </div>
+    <div class="views" role="group" aria-label="View">
+      <button id="v-matches" aria-pressed="true" data-v="matches">Predictions</button>
+      <button id="v-ratings" aria-pressed="false" data-v="ratings">Team ratings</button>
+      <button id="v-table" aria-pressed="false" data-v="table">League table</button>
+      <button id="v-record" aria-pressed="false" data-v="record">Track record</button>
+    </div>
+  </header>
+  <div class="leagues" id="leagues" role="tablist" aria-label="League"></div>
+
+  <div id="view-matches" class="grid">
+    <nav class="rail" id="rail" aria-label="Fixtures"></nav>
+    <main class="main" id="main"></main>
+  </div>
+  <div id="view-ratings" hidden></div>
+  <div id="view-table" hidden></div>
+  <div id="view-record" hidden></div>
+
+  <footer class="foot" id="foot"></footer>
+</div>
+
+<script>
+const D = /*DATA*/null;
+let L = D.leagues[0];
+
+const $ = s => document.querySelector(s);
+const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
+const f2 = x => x.toFixed(2);
+const sgn = x => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(2);
+const tone = (v, good, bad, lowerBetter) => v == null ? "" : (lowerBetter ? (v <= good ? "good" : v >= bad ? "bad" : "") : (v >= good ? "good" : v <= bad ? "bad" : ""));
+const sgnc = x => `<span class="${x > 0.05 ? "good" : x < -0.05 ? "bad" : ""}">${sgn(x)}</span>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dayName = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", {weekday:"short", month:"short", day:"numeric"});
+const short = t => t.replace("Manchester United","Man Utd").replace("Manchester City","Man City").replace("Brighton & Hove Albion","Brighton").replace("Tottenham Hotspur","Spurs").replace("Nottingham Forest","Nott'm Forest").replace("Wolverhampton Wanderers","Wolves").replace("Newcastle United","Newcastle").replace("West Ham United","West Ham").replace("Leeds United","Leeds");
+
+function setLabel(){ $("#mdLabel").textContent = `${L.name} · ${L.matchday || "no upcoming games"} · results through ${dayName(L.results_through)}`; }
+
+
+/* ---------- club kit colours ---------- */
+const KITS = {"Arsenal": ["#EF0107", "#FFFFFF"], "Aston Villa": ["#670E36", "#95BFE5"], "Bournemouth": ["#DA291C", "#000000"], "Brentford": ["#E30613", "#FFFFFF"], "Brighton & Hove Albion": ["#0057B8", "#FFFFFF"], "Chelsea": ["#034694", "#FFFFFF"], "Coventry City": ["#59CBE8", "#FFFFFF"], "Crystal Palace": ["#1B458F", "#C4122E"], "Everton": ["#003399", "#FFFFFF"], "Fulham": ["#FFFFFF", "#000000"], "Hull City": ["#F5A12D", "#000000"], "Ipswich Town": ["#0044A9", "#FFFFFF"], "Leeds United": ["#FFFFFF", "#1D428A"], "Liverpool": ["#C8102E", "#FFFFFF"], "Manchester City": ["#6CABDD", "#1C2C5B"], "Manchester United": ["#DA291C", "#FFFFFF"], "Newcastle United": ["#241F20", "#FFFFFF"], "Nottingham Forest": ["#DD0000", "#FFFFFF"], "Sunderland": ["#EB172B", "#FFFFFF"], "Tottenham Hotspur": ["#FFFFFF", "#132257"], "Athletic Club": ["#EE2523", "#FFFFFF"], "CA Osasuna": ["#D91A21", "#0A346F"], "Club Atlético de Madrid": ["#CB3524", "#272E61"], "Deportivo Alavés": ["#0761AF", "#FFFFFF"], "Elche CF": ["#FFFFFF", "#05642C"], "Getafe CF": ["#005999", "#FFFFFF"], "Levante UD": ["#B4053F", "#004C9B"], "Málaga CF": ["#009EE0", "#FFFFFF"], "FC Barcelona": ["#A50044", "#004D98"], "RC Celta de Vigo": ["#8AC3EE", "#FFFFFF"], "RC Deportivo La Coruña": ["#0067B1", "#FFFFFF"], "RCD Espanyol de Barcelona": ["#007FC8", "#FFFFFF"], "Rayo Vallecano de Madrid": ["#FFFFFF", "#E53027"], "Real Betis Balompié": ["#0BB363", "#FFFFFF"], "Real Madrid CF": ["#FFFFFF", "#00529F"], "Real Racing Club de Santander": ["#009A44", "#FFFFFF"], "Real Sociedad de Fútbol": ["#0067B1", "#FFFFFF"], "Sevilla": ["#FFFFFF", "#D4021D"], "Valencia CF": ["#FFFFFF", "#F18E00"], "Villarreal CF": ["#FFE667", "#005187"], "1. FC Köln": ["#FFFFFF", "#ED1C24"], "1. FC Union Berlin": ["#EB1923", "#FFFFFF"], "1. FSV Mainz 05": ["#C3141E", "#FFFFFF"], "Bayer 04 Leverkusen": ["#E32221", "#000000"], "Borussia Dortmund": ["#FDE100", "#000000"], "Borussia Mönchengladbach": ["#FFFFFF", "#00A651"], "Eintracht Frankfurt": ["#000000", "#E1000F"], "FC Augsburg": ["#BA3733", "#FFFFFF"], "FC Bayern München": ["#DC052D", "#FFFFFF"], "FC Schalke 04": ["#004D9D", "#FFFFFF"], "Hamburger SV": ["#FFFFFF", "#0A3F86"], "RB Leipzig": ["#FFFFFF", "#DD0741"], "SC Freiburg": ["#E2001A", "#000000"], "SC Paderborn 07": ["#005CA9", "#000000"], "SV 07 Elversberg": ["#000000", "#FFFFFF"], "SV Werder Bremen": ["#1D9053", "#FFFFFF"], "TSG 1899 Hoffenheim": ["#1C63B7", "#FFFFFF"], "VfB Stuttgart": ["#FFFFFF", "#E32219"], "AC Milan": ["#FB090B", "#000000"], "AC Monza": ["#E30613", "#FFFFFF"], "ACF Fiorentina": ["#482E92", "#FFFFFF"], "AS Roma": ["#8E1F2F", "#F0BC42"], "Atalanta BC": ["#1E71B8", "#000000"], "Bologna FC 1909": ["#1A2F48", "#A21C26"], "Cagliari Calcio": ["#B01028", "#002350"], "Como 1907": ["#003DA5", "#FFFFFF"], "FC Internazionale Milano": ["#0068A8", "#000000"], "Frosinone Calcio": ["#FFD200", "#0055A4"], "Genoa CFC": ["#AD1919", "#002350"], "Juventus": ["#FFFFFF", "#000000"], "Parma Calcio 1913": ["#FFFFFF", "#000000"], "SS Lazio": ["#87D8F7", "#FFFFFF"], "SSC Napoli": ["#12A0D7", "#FFFFFF"], "Torino": ["#8A1E03", "#FFFFFF"], "US Lecce": ["#FFD200", "#DA291C"], "US Sassuolo Calcio": ["#00A752", "#000000"], "Udinese Calcio": ["#FFFFFF", "#000000"], "Venezia": ["#000000", "#F58025"], "AJ Auxerre": ["#FFFFFF", "#0055A4"], "AS Monaco": ["#E51B22", "#FFFFFF"], "Angers SCO": ["#000000", "#FFFFFF"], "ES Troyes AC": ["#005DAA", "#FFFFFF"], "FC Lorient": ["#F58113", "#000000"], "Le Havre AC": ["#8DC8E8", "#003F7D"], "Le Mans": ["#DA291C", "#FFD200"], "Lille OSC": ["#E01E13", "#24216A"], "OGC Nice": ["#C8102E", "#000000"], "Olympique Lyonnais": ["#FFFFFF", "#1C3F94"], "Olympique de Marseille": ["#FFFFFF", "#2FAEE0"], "Paris": ["#1F3B73", "#FFFFFF"], "Paris Saint-Germain": ["#004170", "#DA291C"], "RC Strasbourg Alsace": ["#009FE3", "#FFFFFF"], "Racing Club de Lens": ["#FFD400", "#E30613"], "Stade Brestois 29": ["#E2001A", "#FFFFFF"], "Stade Rennais FC 1901": ["#E13327", "#000000"], "Toulouse": ["#5F3B91", "#FFFFFF"], "Birmingham City": ["#1E3C96", "#FFFFFF"], "Blackburn Rovers": ["#009EE0", "#FFFFFF"], "Bolton Wanderers": ["#FFFFFF", "#263C7E"], "Bristol City": ["#E21A23", "#FFFFFF"], "Burnley": ["#6C1D45", "#99D6EA"], "Cardiff City": ["#0070B5", "#FFFFFF"], "Charlton Athletic": ["#DA291C", "#FFFFFF"], "Derby County": ["#FFFFFF", "#000000"], "Lincoln City": ["#DA291C", "#FFFFFF"], "Middlesbrough": ["#E11B22", "#FFFFFF"], "Millwall": ["#001D5E", "#FFFFFF"], "Norwich City": ["#FFF200", "#00A650"], "Portsmouth": ["#001489", "#FFFFFF"], "Preston North End": ["#FFFFFF", "#00205B"], "Queens Park Rangers": ["#1D5BA4", "#FFFFFF"], "Sheffield United": ["#EE2737", "#FFFFFF"], "Southampton": ["#D71920", "#FFFFFF"], "Stoke City": ["#E03A3E", "#FFFFFF"], "Swansea City": ["#FFFFFF", "#000000"], "Watford": ["#FBEE23", "#ED2127"], "West Bromwich Albion": ["#122F67", "#FFFFFF"], "West Ham United": ["#7A263A", "#1BB1E7"], "Wolverhampton Wanderers": ["#FDB913", "#231F20"], "Wrexham": ["#D71920", "#FFFFFF"], "ADO Den Haag": ["#F8D615", "#00813E"], "AZ": ["#DB0021", "#FFFFFF"], "Ajax": ["#D2122E", "#FFFFFF"], "FC Groningen": ["#00843D", "#FFFFFF"], "FC Twente '65": ["#E30613", "#FFFFFF"], "FC Utrecht": ["#DA291C", "#FFFFFF"], "Feyenoord Rotterdam": ["#E20A16", "#FFFFFF"], "Fortuna Sittard": ["#FFE600", "#00843D"], "Go Ahead Eagles": ["#E30613", "#FFE600"], "NEC": ["#D7182A", "#00843D"], "PEC Zwolle": ["#0058A3", "#FFFFFF"], "PSV": ["#ED1C24", "#FFFFFF"], "SBV Excelsior": ["#E30613", "#000000"], "SC Cambuur-Leeuwarden": ["#FFE600", "#0055A4"], "SC Heerenveen": ["#0055A4", "#FFFFFF"], "Sparta Rotterdam": ["#E30613", "#FFFFFF"], "Telstar 1963": ["#FFFFFF", "#E30613"], "Willem II Tilburg": ["#D7182A", "#003C8F"], "Académico de Viseu": ["#000000", "#FFFFFF"], "CD Nacional": ["#000000", "#FFFFFF"], "CD Santa Clara": ["#E30613", "#FFFFFF"], "CF Estrela da Amadora": ["#DA291C", "#00843D"], "CS Marítimo": ["#00843D", "#DA291C"], "Casa Pia AC": ["#000000", "#FFFFFF"], "FC Alverca": ["#E30613", "#FFFFFF"], "FC Arouca": ["#FFE600", "#00205B"], "FC Famalicão": ["#FFFFFF", "#003C8F"], "FC Porto": ["#003893", "#FFFFFF"], "GD Estoril Praia": ["#FFE600", "#0055A4"], "Gil Vicente": ["#E30613", "#0055A4"], "Moreirense": ["#00843D", "#FFFFFF"], "Rio Ave": ["#00843D", "#FFFFFF"], "Sport Lisboa e Benfica": ["#E20A16", "#FFFFFF"], "Sporting Clube de Braga": ["#E20A16", "#FFFFFF"], "Sporting Clube de Portugal": ["#008057", "#FFFFFF"], "Vitória Guimarães": ["#FFFFFF", "#000000"]};
+const rgb = h => [1,3,5].map(i => parseInt(h.slice(i, i + 2), 16));
+const lum = h => { const [r,g,b] = rgb(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126*r + 0.7152*g + 0.0722*b; };
+const dist = (a, b) => { const x = rgb(a), y = rgb(b); return Math.hypot(x[0]-y[0], x[1]-y[1], x[2]-y[2]); };
+const mixW = (h, k) => "#" + rgb(h).map(v => Math.round(v + (255 - v) * k).toString(16).padStart(2, "0")).join("");
+const kit = t => KITS[t] || ["#B8BAC0", "#6E7076"];
+function teamColor(fill, alt) {
+  if (lum(fill) < 0.03) fill = lum(alt) > 0.03 ? alt : "#9AA0A8";          // black kits vanish on the dark page, use the trim colour
+  const ink = lum(fill) < 0.1 ? mixW(fill, 0.55) : fill;                 // text version must read on dark
+  const on = lum(fill) > 0.35 ? "#111214" : "#FFFFFF";                   // text that sits on the fill
+  return {fill, ink, on};
+}
+function matchColors(H, A) {
+  const h = teamColor(...kit(H));
+  let [ap, as] = kit(A);
+  let a = teamColor(ap, as);
+  if (dist(h.fill, a.fill) < 140) {                                       // colour clash: away side switches, like a real away kit
+    const options = [as, ap === "#FFFFFF" ? "#1F2937" : "#FFFFFF", "#9AA0A8"].map(c => teamColor(c, ap));
+    a = options.sort((x, y) => dist(h.fill, y.fill) - dist(h.fill, x.fill))[0];
+  }
+  return {h, a};
+}
+const kitVars = (c) => `--home:${c.h.ink};--home-fill:${c.h.fill};--on-home:${c.h.on};--away:${c.a.ink};--away-fill:${c.a.fill};--on-away:${c.a.on}`;
+const swatch = t => { const [p, s] = kit(t); return `<span class="kit" style="background:linear-gradient(135deg, ${p} 50%, ${s} 50%)"></span>`; };
+
+/* ---------- fixture rail ---------- */
+function renderRail(activeId) {
+  let html = "", lastDay = "";
+  for (const m of L.matches) {
+    if (m.date !== lastDay) { html += `<div class="day">${dayName(m.date)}</div>`; lastDay = m.date; }
+    const p = m.pred;
+    const fav = p.home_win >= p.away_win ? pct(p.home_win) : pct(p.away_win);
+    html += `<button class="fx" data-id="${m.id}" aria-current="${m.id === activeId}">
+      <span class="t">${esc(short(m.home))} <span style="color:var(--faint)">v</span> ${esc(short(m.away))}</span>
+      <span class="p">${fav}</span>
+      <span class="mini" style="${kitVars(matchColors(m.home, m.away))}"><i style="width:${pct(p.home_win)};background:var(--home-fill)"></i><i style="width:${pct(p.draw)};background:var(--draw-soft)"></i><i style="width:${pct(p.away_win)};background:var(--away-fill)"></i></span>
+    </button>`;
+  }
+  $("#rail").innerHTML = html;
+  $("#rail").querySelectorAll(".fx").forEach(b => b.onclick = () => select(b.dataset.id, true));
+}
+
+/* ---------- one match ---------- */
+function renderMatch(m) {
+  const p = m.pred, c = m.calc, H = m.home, A = m.away;
+  const halfHA = Math.exp(c.home_adv / 2);
+  const tagName = {why:"Why", trend:"Trend", watch:"Watch", h2h:"H2H", caution:"Caution"};
+
+  // score grid colours
+  let maxCell = 0; m.grid.forEach(r => r.forEach(v => maxCell = Math.max(maxCell, v)));
+  const cell = (i, j, v) => {
+    const region = i > j ? "--home-fill" : i < j ? "--away-fill" : "--draw";
+    const a = Math.max(0.06, v / maxCell);
+    const strong = v / maxCell > 0.55;
+    return `<td title="${esc(H)} ${i}-${j} ${esc(A)}: ${pct(v,1)}" style="background:color-mix(in srgb, var(${region}) ${Math.round(a*100)}%, var(--surface));color:${strong && i !== j ? (i > j ? "var(--on-home)" : "var(--on-away)") : "var(--fg)"};${i===j?"outline:1.5px dashed var(--muted);outline-offset:-3px;":""}">${(v*100).toFixed(1)}</td>`;
+  };
+  let grid = `<table class="sg"><tr><th></th><th colspan="7" class="ax" style="color:var(--away)">${esc(short(A))} goals →</th></tr><tr><th></th>${[0,1,2,3,4,5,6].map(j=>`<th>${j}</th>`).join("")}</tr>`;
+  m.grid.forEach((row, i) => {
+    grid += `<tr><th>${i===0?`<span class="ax" style="color:var(--home)">${esc(short(H))}<br>↓</span> `:""}${i}</th>${row.map((v,j)=>cell(i,j,v)).join("")}</tr>`;
+  });
+  grid += `</table>`;
+
+  const distMax = Math.max(...c.home_goal_dist, ...c.away_goal_dist);
+  const dist = (arr, team, col) => `<div class="dist"><div class="label" style="color:var(${col})">${esc(H===team?short(H):short(A))} goals</div>${arr.map((v,k)=>
+    `<div class="row"><span class="mono">${k}${k===6?"+":""}</span><span><span class="b" style="display:block;width:${(v/distMax*100).toFixed(1)}%;background:var(${col}-fill)"></span></span><span>${pct(v,1)}</span></div>`).join("")}</div>`;
+
+  // h2h
+  const hs = m.h2h.summary;
+  let h2h;
+  if (!hs.meetings) {
+    h2h = `<p class="sub">No league meetings between these two since ${L.h2h_from}.</p>`;
+  } else {
+    h2h = `<div class="h2hs">
+      <div><span class="label">Meetings</span><b>${hs.meetings}</b></div>
+      <div><span class="label" style="color:var(--home)">${esc(short(H))} wins</span><b>${hs.home_team_wins}</b></div>
+      <div><span class="label">Draws</span><b>${hs.draws}</b></div>
+      <div><span class="label" style="color:var(--away)">${esc(short(A))} wins</span><b>${hs.away_team_wins}</b></div>
+      <div><span class="label">Goals / game</span><b>${hs.avg_goals}</b></div>
+      <div><span class="label">Over 2.5</span><b>${pct(hs.over25)}</b></div>
+      <div><span class="label">BTTS</span><b>${pct(hs.btts)}</b></div>
+      <div><span class="label">At ${esc(short(H))}</span><b>${hs.home_wins_at_venue}/${hs.at_this_venue}</b></div>
+    </div>
+    <div class="scroll"><table class="rt"><thead><tr><th>Date</th><th>Home</th><th class="num">Score</th><th>Away</th></tr></thead><tbody>
+    ${m.h2h.games.map(g => {
+      const col = t => t === H ? "var(--home)" : "var(--away)";
+      const w = g.winner;
+      return `<tr><td class="mono" style="color:var(--muted)">${g.date}</td>
+        <td style="font-weight:${w===g.home?600:400};color:${col(g.home)}">${esc(short(g.home))}</td>
+        <td class="num mono">${g.hg}–${g.ag}</td>
+        <td style="font-weight:${w===g.away?600:400};color:${col(g.away)}">${esc(short(g.away))}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+
+  const teamBlock = (team, t, col, venueWord) => {
+    const s = t.season, v = t.venue;
+    const row = (k, a, b, ta = "", tb = "") => `<span class="k">${k}</span><span class="v ${ta}">${a}</span><span class="v ${tb}">${b}</span>`;
+    const tn = (x, key, g, b, low) => x ? tone(x[key], g, b, low) : "";
+    return `<div class="panel">
+      <div class="teamhead" style="color:var(${col})">${esc(team)}</div>
+      <div class="label" style="margin-bottom:6px">Last 5 league games</div>
+      <div class="formrow" style="margin-bottom:10px">${t.form.map(g=>`<span class="res ${g.res}" title="${g.venue==="H"?"vs":"at"} ${esc(g.opp)} ${g.gf}-${g.ga} (${g.date})">${g.res}</span>`).join("")}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">${t.form.map(g=>`${g.venue==="H"?"v":"@"} ${esc(short(g.opp))} ${g.gf}-${g.ga}`).join(" · ")}</div>
+      <div class="stat">
+        <span class="label">Per game</span><span class="label" style="text-align:right">This season</span><span class="label" style="text-align:right">${venueWord}*</span>
+        ${row("Played", s?s.played:"–", v?v.played:"–")}
+        ${row("Points", s?s.ppg:"–", v?v.ppg:"–", tn(s,"ppg",1.8,1.0), tn(v,"ppg",1.8,1.0))}
+        ${row("Scored", s?s.gf:"–", v?v.gf:"–", tn(s,"gf",1.6,1.0), tn(v,"gf",1.6,1.0))}
+        ${row("Conceded", s?s.ga:"–", v?v.ga:"–", tn(s,"ga",1.0,1.6,true), tn(v,"ga",1.0,1.6,true))}
+        ${row("Clean sheet", s?pct(s.clean_sheets):"–", v?pct(v.clean_sheets):"–", tn(s,"clean_sheets",0.4,0.15), tn(v,"clean_sheets",0.4,0.15))}
+        ${row("Failed to score", s?pct(s.failed_to_score):"–", v?pct(v.failed_to_score):"–", tn(s,"failed_to_score",0.15,0.35,true), tn(v,"failed_to_score",0.15,0.35,true))}
+        ${row("Over 2.5", s?pct(s.over25):"–", v?pct(v.over25):"–")}
+        ${row("BTTS", s?pct(s.btts):"–", v?pct(v.btts):"–")}
+      </div></div>`;
+  };
+
+  const top = m.top_scores.map(s => `${s.h}–${s.a} <span style="color:var(--muted)">${pct(s.p)}</span>`).join(" &nbsp;·&nbsp; ");
+
+  $("#main").setAttribute("style", kitVars(matchColors(H, A)));
+  $("#main").innerHTML = `
+  <div class="head">
+    <div class="when">${dayName(m.date)} · ${m.time} UK · ${L.matchday}</div>
+    <div class="teams">
+      <h2 class="h">${esc(H)}</h2>
+      <div class="xg">${f2(p.xg_home)} – ${f2(p.xg_away)}<small>expected goals</small></div>
+      <h2 class="a">${esc(A)}</h2>
+    </div>
+    <div class="bar3" role="img" aria-label="${esc(H)} ${pct(p.home_win)}, draw ${pct(p.draw)}, ${esc(A)} ${pct(p.away_win)}">
+      <div class="bh" style="flex-basis:${pct(p.home_win,1)}">${pct(p.home_win)}</div>
+      <div class="bd" style="flex-basis:${pct(p.draw,1)}">${pct(p.draw)}</div>
+      <div class="ba" style="flex-basis:${pct(p.away_win,1)}">${pct(p.away_win)}</div>
+    </div>
+    <div class="bar3legend"><span>${esc(short(H))} win</span><span>Draw</span><span>${esc(short(A))} win</span></div>
+    <div class="chips">
+      <div class="chip"><span class="label">Over 2.5 goals</span><b>${pct(p.over25)}</b></div>
+      <div class="chip"><span class="label">Both teams score</span><b>${pct(p.btts)}</b></div>
+      <div class="chip"><span class="label">Fair odds (home / draw / away)</span><b style="font-size:16px">${(1/p.home_win).toFixed(2)} / ${(1/p.draw).toFixed(2)} / ${(1/p.away_win).toFixed(2)}</b></div>
+    </div>
+    <div style="margin-top:14px;font-size:14px"><span class="label">Most likely scores</span><div class="mono" style="margin-top:4px">${top}</div></div>
+  </div>
+
+  <section>
+    <h3>Why it leans this way</h3>
+    <p class="sub">What's driving the number, and what to keep an eye on.</p>
+    <div class="panel"><ul class="ins">${m.insights.map(i=>`<li class="${i.tone?"t-"+i.tone:""}"><span class="tag ${i.kind}${i.tone?" t-"+i.tone:""}">${tagName[i.kind]}</span><span>${esc(i.text)}</span></li>`).join("")}</ul></div>
+  </section>
+
+  <section>
+    <h3>How it was calculated</h3>
+    <p class="sub">Every number on this page comes from these five steps. Nothing is hand-picked.</p>
+    <div class="panel steps">
+      <div class="step"><div class="n">1</div><div>
+        <h4>Start from an average team</h4>
+        <p>Across the ${L.trained_on} league games from ${L.seasons_used.join(" and ")}, a team scores about <b class="mono">${f2(c.base_goals)}</b> goals a game. Recent games count more: a game from ${D.settings.half_life_days} days ago counts half as much as one from today. Home teams score about <b class="mono">${L.home_adv_mult.toFixed(2)}×</b> as many goals as away teams.</p>
+      </div></div>
+
+      <div class="step"><div class="n">2</div><div>
+        <h4>Rate each team's attack and defense</h4>
+        <p>The model finds the ratings that best explain every score in the data. Attack above 0 means they score more than average. Defense above 0 means they concede less than average. As multipliers: e<sup>rating</sup>.</p>
+        <div class="scroll"><table class="rt"><thead><tr><th>Team</th><th class="num">Attack</th><th class="num">×goals</th><th class="num">Defense</th><th class="num">×conceded</th></tr></thead><tbody>
+          <tr><td style="color:var(--home);font-weight:600">${esc(H)}</td><td class="num mono">${sgnc(c.home_att)}</td><td class="num mono">${Math.exp(c.home_att).toFixed(2)}</td><td class="num mono">${sgnc(c.home_def)}</td><td class="num mono">${Math.exp(-c.home_def).toFixed(2)}</td></tr>
+          <tr><td style="color:var(--away);font-weight:600">${esc(A)}</td><td class="num mono">${sgnc(c.away_att)}</td><td class="num mono">${Math.exp(c.away_att).toFixed(2)}</td><td class="num mono">${sgnc(c.away_def)}</td><td class="num mono">${Math.exp(-c.away_def).toFixed(2)}</td></tr>
+        </tbody></table></div>
+      </div></div>
+
+      <div class="step"><div class="n">3</div><div>
+        <h4>Combine into expected goals</h4>
+        <p>Each side's expected goals = average × their attack × the other side's defense × home or away factor.</p>
+        <div class="eq">
+          <span class="h">${esc(short(H))}</span> = ${f2(c.base_goals)} × ${Math.exp(c.home_att).toFixed(2)} <span style="color:var(--muted)">(attack)</span> × ${Math.exp(-c.away_def).toFixed(2)} <span style="color:var(--muted)">(${esc(short(A))} defense)</span> × ${halfHA.toFixed(2)} <span style="color:var(--muted)">(home)</span> = <span class="h">${f2(p.xg_home)}</span><br>
+          <span class="a">${esc(short(A))}</span> = ${f2(c.base_goals)} × ${Math.exp(c.away_att).toFixed(2)} <span style="color:var(--muted)">(attack)</span> × ${Math.exp(-c.home_def).toFixed(2)} <span style="color:var(--muted)">(${esc(short(H))} defense)</span> ÷ ${halfHA.toFixed(2)} <span style="color:var(--muted)">(away)</span> = <span class="a">${f2(p.xg_away)}</span>
+        </div>
+      </div></div>
+
+      <div class="step"><div class="n">4</div><div>
+        <h4>Turn expected goals into a goal count</h4>
+        <p>Goals are rare, random events, so they follow a Poisson distribution. P(k goals) = xG<sup>k</sup> × e<sup>−xG</sup> ÷ k!</p>
+        <div class="dists">${dist(c.home_goal_dist, H, "--home")}${dist(c.away_goal_dist, A, "--away")}</div>
+      </div></div>
+
+      <div class="step"><div class="n">5</div><div>
+        <h4>Multiply into every possible scoreline, then add them up</h4>
+        <p>Each cell is P(${esc(short(H))} goals) × P(${esc(short(A))} goals), in %. Cells below the dashed diagonal add up to the home win, the diagonal itself to the draw, and cells above it to the away win.</p>
+        <div class="gridwrap">${grid}</div>
+        <div class="legend"><span><i style="background:var(--home-fill)"></i>${esc(short(H))} win ${pct(p.home_win,1)}</span><span><i style="background:var(--surface);outline:1.5px dashed var(--muted);outline-offset:-2px"></i>Draw ${pct(p.draw,1)}</span><span><i style="background:var(--away-fill)"></i>${esc(short(A))} win ${pct(p.away_win,1)}</span></div>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <h3>Head to head</h3>
+    <p class="sub">League meetings since ${L.h2h_from}, most recent first. Shown for context. The model itself doesn't use h2h.</p>
+    <div class="panel">${h2h}</div>
+  </section>
+
+  <section>
+    <h3>Form and splits</h3>
+    <p class="sub">* Home record for ${esc(short(H))}, away record for ${esc(short(A))}, over last season and this one.</p>
+    <div class="two">${teamBlock(H, m.teams.home, "--home", "At home")}${teamBlock(A, m.teams.away, "--away", "Away")}</div>
+  </section>
+`;
+}
+
+
+/* ---------- other views ---------- */
+function renderRatings() {
+  const maxA = Math.max(...L.ratings.map(r => Math.abs(r.attack))), maxD = Math.max(...L.ratings.map(r => Math.abs(r.defense)));
+  const bar = (v, mx, col) => `<span class="ratebar" style="width:${(Math.abs(v)/mx*60).toFixed(0)}px;background:var(${v>=0?col:"--bad"})"></span>`;
+  $("#view-ratings").innerHTML = `<section><h3>Team ratings</h3><p class="sub">The attack and defense numbers behind every prediction. 0 = league average. Teams sorted by attack + defense.</p>
+  <div class="panel scroll"><table class="rt"><thead><tr><th>#</th><th>Team</th><th class="num">Attack</th><th></th><th class="num">Defense</th><th></th><th class="num">Goals vs avg team</th><th class="num">Conceded vs avg team</th></tr></thead><tbody>
+  ${L.ratings.map((r,i)=>`<tr><td class="mono" style="color:var(--muted)">${i+1}</td><td style="font-weight:600;white-space:nowrap">${swatch(r.team)}${esc(r.team)}</td>
+    <td class="num mono">${sgnc(r.attack)}</td><td>${bar(r.attack,maxA,"--good")}</td>
+    <td class="num mono">${sgnc(r.defense)}</td><td>${bar(r.defense,maxD,"--good")}</td>
+    <td class="num mono">${f2(r.xg_for_vs_avg)}</td><td class="num mono">${f2(r.xg_against_vs_avg)}</td></tr>`).join("")}
+  </tbody></table></div></section>`;
+}
+function renderTable() {
+  $("#view-table").innerHTML = `<section><h3>League table</h3><p class="sub">${L.seasons_used[1]}, from results in the dataset. Green edge marks the top 4, red the bottom 3.</p>
+  <div class="panel scroll"><table class="rt"><thead><tr><th>#</th><th>Team</th><th class="num">P</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">GF</th><th class="num">GA</th><th class="num">GD</th><th class="num">Pts</th></tr></thead><tbody>
+  ${L.table.map(r=>`<tr class="${r.pos<=4?"pos-top":r.pos>L.table.length-3?"pos-bot":""}"><td class="mono" style="color:var(--muted)">${r.pos}</td><td style="font-weight:600;white-space:nowrap">${swatch(r.team)}${esc(r.team)}</td>${["p","w","d","l","gf","ga"].map(k=>`<td class="num mono">${r[k]}</td>`).join("")}<td class="num mono ${r.gd>0?"good":r.gd<0?"bad":""}">${r.gd>0?"+":""}${r.gd}</td><td class="num mono" style="font-weight:600">${r.pts}</td></tr>`).join("")}
+  </tbody></table></div></section>`;
+}
+function renderRecord() {
+  const b = L.backtest;
+  if (!b) { $("#view-record").innerHTML = `<p class="sub">Not enough past seasons to test this league yet.</p>`; return; }
+  const llGain = (1 - b.logloss_model / b.logloss_baseline);
+  $("#view-record").innerHTML = `<section><h3>Track record</h3>
+  <p class="sub">The model was replayed on the ${b.season} season one matchday at a time, only using results it would have known before kickoff. It's compared to a dumb baseline that always says 45% home, 25% draw, 30% away.</p>
+  <div class="kpis">
+    <div><span class="label">Games tested</span><b>${b.games}</b><small>${b.season} season</small></div>
+    <div><span class="label">Picked the right result</span><b class="${b.accuracy>=0.5?"good":b.accuracy<0.45?"bad":""}">${pct(b.accuracy,1)}</b><small>baseline (always home) ≈ 45%</small></div>
+    <div><span class="label">Log loss (lower is better)</span><b class="${llGain>0?"good":"bad"}">${b.logloss_model.toFixed(3)}</b><small>baseline ${b.logloss_baseline.toFixed(3)} · <span class="pill ${llGain>0?"good":"bad"}">${pct(Math.abs(llGain),1)} ${llGain>0?"better":"worse"}</span></small></div>
+    <div><span class="label">Brier score (lower is better)</span><b class="${b.brier_model<b.brier_baseline?"good":"bad"}">${b.brier_model.toFixed(3)}</b><small>baseline ${b.brier_baseline.toFixed(3)}</small></div>
+  </div>
+  <div class="panel"><p style="margin:0;max-width:70ch">What this means: the probabilities are clearly better than guessing, but this is a simple goals-only model. Bookmaker closing odds usually land around 0.95 to 1.00 log loss in top leagues, so the books are still sharper. Compare these numbers to real odds before trusting any edge.</p></div>
+  </section>`;
+}
+
+/* ---------- wiring ---------- */
+function renderLeagues() {
+  $("#leagues").innerHTML = D.leagues.map(l => `<button role="tab" aria-selected="${l.code===L.code}" data-code="${l.code}"><small>${esc(l.country)}</small><b>${esc(l.name)}</b></button>`).join("");
+  $("#leagues").querySelectorAll("button").forEach(b => b.onclick = () => setLeague(b.dataset.code));
+}
+function setLeague(code, matchId) {
+  L = D.leagues.find(l => l.code === code) || D.leagues[0];
+  renderLeagues(); setLabel();
+  renderRatings(); renderTable(); renderRecord();
+  if (L.matches.length) select(matchId);
+  else { $("#rail").innerHTML = ""; $("#main").innerHTML = `<p class="sub">No upcoming games in the data for ${esc(L.name)} right now.</p>`; }
+  try { localStorage.setItem("mm-league", L.code); } catch (e) {}
+  $("#foot").innerHTML = `Results data: openfootball/football.json (${esc(L.name)}, ${L.h2h_from} to now, results through ${L.results_through}). Model: Poisson goals model with attack and defense ratings per team, time-weighted, fit on ${L.trained_on} games. Built ${D.generated}, rebuilt every morning. Not betting advice: fair odds are what the model thinks a price should be, not a recommendation.`;
+}
+function select(id, scroll) {
+  const m = L.matches.find(x => x.id === id) || L.matches[0];
+  renderRail(m.id);
+  renderMatch(m);
+  try { history.replaceState(null, "", "#" + m.id); } catch (e) {}
+  if (scroll && window.innerWidth <= 860) $("#main").scrollIntoView({behavior:"smooth"});
+}
+function show(v) {
+  for (const k of ["matches","ratings","table","record"]) {
+    $("#view-" + k).hidden = k !== v;
+    $("#v-" + k).setAttribute("aria-pressed", k === v);
+  }
+  try { localStorage.setItem("mm-view", v); } catch (e) {}
+}
+document.querySelectorAll(".views button").forEach(b => b.onclick = () => show(b.dataset.v));
+
+const hash = (location.hash || "").slice(1);
+let startCode = (D.leagues.find(l => l.matches.some(m => m.id === hash)) || {}).code;
+if (!startCode) { try { startCode = localStorage.getItem("mm-league"); } catch (e) {} }
+setLeague(startCode || D.leagues[0].code, hash);
+let saved = "matches"; try { saved = localStorage.getItem("mm-view") || "matches"; } catch (e) {}
+show(saved);
+</script>
